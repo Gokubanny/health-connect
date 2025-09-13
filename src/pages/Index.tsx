@@ -3,14 +3,14 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { 
-  MapPin, 
-  Calendar, 
-  Phone, 
-  Shield, 
-  Heart, 
-  Users, 
-  Clock, 
+import {
+  MapPin,
+  Calendar,
+  Phone,
+  Shield,
+  Heart,
+  Users,
+  Clock,
   Star,
   Video,
   MessageCircle,
@@ -98,22 +98,31 @@ const Index = () => {
       {/* Header */}
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+          {/* Left: Logo */}
           <div className="flex items-center gap-2">
             <Heart className="h-8 w-8 text-primary" />
             <span className="text-2xl font-bold text-primary">HealthConnect</span>
           </div>
+
+          {/* Middle: Nav Links */}
           <nav className="hidden md:flex items-center gap-6">
             <a href="#services" className="text-foreground hover:text-primary transition-colors">Services</a>
             <a href="#hospitals" className="text-foreground hover:text-primary transition-colors">Find Hospitals</a>
             <a href="#about" className="text-foreground hover:text-primary transition-colors">About</a>
+          </nav>
+
+          {/* Right: Auth/User Section */}
+          <div className="flex items-center gap-4">
             {user ? (
-              <div className="flex items-center gap-4">
-                <span className="text-muted-foreground">Welcome, {user.email}</span>
+              <>
+                <span className="text-muted-foreground">
+                  Welcome, {user.user_metadata?.full_name || "User"}
+                </span>
                 <Button variant="outline" size="sm" onClick={handleSignOut}>
                   <LogOut className="mr-2 h-4 w-4" />
                   Sign Out
                 </Button>
-              </div>
+              </>
             ) : (
               <>
                 <Link to="/auth">
@@ -124,14 +133,14 @@ const Index = () => {
                 </Link>
               </>
             )}
-          </nav>
+          </div>
         </div>
       </header>
 
       {/* Hero Section */}
       <section className="relative py-20 px-4 bg-gradient-hero text-white overflow-hidden">
         <div className="absolute inset-0 bg-black/20" />
-        <div 
+        <div
           className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-30"
           style={{ backgroundImage: `url(${heroImage})` }}
         />
@@ -145,7 +154,7 @@ const Index = () => {
               <span className="text-secondary-light"> Connected</span>
             </h1>
             <p className="text-xl md:text-2xl mb-8 text-white/90 max-w-3xl mx-auto">
-              Bridge the gap between hospitals and patients with our comprehensive healthcare platform. 
+              Bridge the gap between hospitals and patients with our comprehensive healthcare platform.
               Find nearby hospitals, book consultations, and get personalized health advisory services.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -155,10 +164,16 @@ const Index = () => {
                     <Calendar className="mr-2 h-5 w-5" />
                     Book Consultation
                   </Button>
-                  <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10 text-lg px-8 py-6">
-                    <MapPin className="mr-2 h-5 w-5" />
-                    Find Hospitals
-                  </Button>
+                  <a href="#hospitals">
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      className="border-white text-white hover:bg-white/10 text-lg px-8 py-6"
+                    >
+                      <MapPin className="mr-2 h-5 w-5" />
+                      Find Hospitals
+                    </Button>
+                  </a>
                 </>
               ) : (
                 <>
@@ -168,10 +183,16 @@ const Index = () => {
                       Get Started
                     </Button>
                   </Link>
-                  <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10 text-lg px-8 py-6">
-                    <MapPin className="mr-2 h-5 w-5" />
-                    Find Hospitals
-                  </Button>
+                  <a href="#hospitals">
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      className="border-white text-white hover:bg-white/10 text-lg px-8 py-6"
+                    >
+                      <MapPin className="mr-2 h-5 w-5" />
+                      Find Hospitals
+                    </Button>
+                  </a>
                 </>
               )}
             </div>
@@ -227,7 +248,9 @@ const Index = () => {
       </section>
 
       {/* Hospital Finder Section */}
-      <HospitalFinder />
+      <section id="hospitals" className="py-20 px-4">
+        <HospitalFinder />
+      </section>
 
       {/* Testimonials */}
       <section className="py-20 px-4">
