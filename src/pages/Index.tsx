@@ -109,6 +109,11 @@ const Index = () => {
             <a href="#services" className="text-foreground hover:text-primary transition-colors">Services</a>
             <a href="#hospitals" className="text-foreground hover:text-primary transition-colors">Find Hospitals</a>
             <a href="#about" className="text-foreground hover:text-primary transition-colors">About</a>
+            {user && (
+              <Link to="/my-consultations" className="text-foreground hover:text-primary transition-colors">
+                My Consultations
+              </Link>
+            )}
           </nav>
 
           {/* Right: Auth/User Section */}
@@ -160,10 +165,13 @@ const Index = () => {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               {user ? (
                 <>
-                  <Button size="lg" className="bg-white text-primary hover:bg-white/90 shadow-hero text-lg px-8 py-6">
-                    <Calendar className="mr-2 h-5 w-5" />
-                    Book Consultation
-                  </Button>
+                  <Link to="/book-consultation">
+                    <Button size="lg" className="bg-white text-primary hover:bg-white/90 shadow-hero text-lg px-8 py-6">
+                      <Calendar className="mr-2 h-5 w-5" />
+                      Book Consultation
+                    </Button>
+                  </Link>
+
                   <a href="#hospitals">
                     <Button
                       size="lg"
@@ -237,9 +245,16 @@ const Index = () => {
                   <CardTitle className="text-xl">{service.title}</CardTitle>
                 </CardHeader>
                 <CardContent className="text-center">
-                  <CardDescription className="text-base leading-relaxed">
+                  <CardDescription className="text-base leading-relaxed mb-4">
                     {service.description}
                   </CardDescription>
+                  {service.title === "Appointment Booking" && (
+                    <Link to="/book-consultation">
+                      <Button className="bg-gradient-primary text-primary-foreground shadow-soft">
+                        Book Now
+                      </Button>
+                    </Link>
+                  )}
                 </CardContent>
               </Card>
             ))}
@@ -250,6 +265,45 @@ const Index = () => {
       {/* Hospital Finder Section */}
       <section id="hospitals" className="py-20 px-4">
         <HospitalFinder />
+      </section>
+
+      {/* Call to Action Section - New */}
+      <section className="py-20 px-4 bg-gradient-primary text-primary-foreground">
+        <div className="container mx-auto text-center">
+          <h2 className="text-4xl md:text-5xl font-bold mb-6">Ready to Get Started?</h2>
+          <p className="text-xl mb-8 text-primary-foreground/90 max-w-2xl mx-auto">
+            Join thousands of patients who trust HealthConnect for their healthcare needs. Book your consultation today.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            {user ? (
+              <>
+                <Link to="/book-consultation">
+                  <Button size="lg" className="bg-white text-primary hover:bg-white/90 shadow-hero text-lg px-8 py-6">
+                    <Calendar className="mr-2 h-5 w-5" />
+                    Book Consultation Now
+                  </Button>
+                </Link>
+                <Link to="/my-consultations">
+                  <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10 text-lg px-8 py-6">
+                    View My Bookings
+                  </Button>
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link to="/auth">
+                  <Button size="lg" className="bg-white text-primary hover:bg-white/90 shadow-hero text-lg px-8 py-6">
+                    <Calendar className="mr-2 h-5 w-5" />
+                    Sign Up & Book
+                  </Button>
+                </Link>
+                <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10 text-lg px-8 py-6">
+                  Learn More
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
       </section>
 
       {/* Testimonials */}
@@ -319,7 +373,11 @@ const Index = () => {
             <div>
               <h3 className="font-semibold text-lg mb-4">Services</h3>
               <ul className="space-y-2 text-primary-foreground/80">
-                <li>Virtual Consultations</li>
+                <li>
+                  <Link to="/book-consultation" className="hover:text-white transition-colors">
+                    Virtual Consultations
+                  </Link>
+                </li>
                 <li>Hospital Finder</li>
                 <li>Health Counseling</li>
                 <li>Emergency Services</li>

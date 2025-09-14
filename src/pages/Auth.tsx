@@ -17,15 +17,19 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   
-  const { signUp, signIn, user } = useAuth();
+  const { signUp, signIn, user, role } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
     if (user) {
-      navigate("/");
+      if (role === "admin") {
+        navigate("/admin"); // 👈 admin goes to admin dashboard
+      } else {
+        navigate("/"); // 👈 normal users go home
+      }
     }
-  }, [user, navigate]);
+  }, [user, role, navigate]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
