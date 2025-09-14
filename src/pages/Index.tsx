@@ -17,7 +17,8 @@ import {
   Stethoscope,
   Activity,
   UserCheck,
-  LogOut
+  LogOut,
+  Settings
 } from "lucide-react";
 import heroImage from "@/assets/healthcare-hero.jpg";
 import { useAuth } from "@/contexts/AuthContext";
@@ -25,7 +26,7 @@ import HospitalFinder from "@/components/HospitalFinder";
 import { useToast } from "@/hooks/use-toast";
 
 const Index = () => {
-  const { user, signOut } = useAuth();
+  const { user, role, signOut } = useAuth();
   const { toast } = useToast();
 
   const handleSignOut = async () => {
@@ -114,12 +115,23 @@ const Index = () => {
                 My Consultations
               </Link>
             )}
+            {user && role === "admin" && (
+              <Link to="/admin" className="text-foreground hover:text-primary transition-colors font-semibold">
+                Admin Panel
+              </Link>
+            )}
           </nav>
 
           {/* Right: Auth/User Section */}
           <div className="flex items-center gap-4">
             {user ? (
               <>
+                {role === "admin" && (
+                  <Badge className="bg-red-100 text-red-800">
+                    <Shield className="mr-1 h-3 w-3" />
+                    Admin
+                  </Badge>
+                )}
                 <span className="text-muted-foreground">
                   Welcome, {user.user_metadata?.full_name || "User"}
                 </span>
@@ -141,6 +153,21 @@ const Index = () => {
           </div>
         </div>
       </header>
+
+      {/* Admin Quick Access Banner */}
+      {user && role === "admin" && (
+        <div className="bg-gradient-primary text-primary-foreground py-2">
+          <div className="container mx-auto px-4 flex justify-center items-center gap-4">
+            <Settings className="h-4 w-4" />
+            <span className="text-sm font-medium">Admin Dashboard Available</span>
+            <Link to="/admin">
+              <Button size="sm" variant="secondary">
+                Go to Admin Panel
+              </Button>
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* Hero Section */}
       <section className="relative py-20 px-4 bg-gradient-hero text-white overflow-hidden">
@@ -267,7 +294,7 @@ const Index = () => {
         <HospitalFinder />
       </section>
 
-      {/* Call to Action Section - New */}
+      {/* Call to Action Section */}
       <section className="py-20 px-4 bg-gradient-primary text-primary-foreground">
         <div className="container mx-auto text-center">
           <h2 className="text-4xl md:text-5xl font-bold mb-6">Ready to Get Started?</h2>

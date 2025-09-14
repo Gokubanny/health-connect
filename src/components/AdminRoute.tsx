@@ -8,11 +8,12 @@ const AdminRoute = ({ children }: { children: JSX.Element }) => {
   if (!user) return <Navigate to="/auth" replace />;
 
   // ✅ Only allow admin users
-  if (user.user_metadata?.role !== "admin") {
-    return <Navigate to="/" replace />;
+  if (user.user_metadata?.role === "admin") {
+    return children; // let admin access the page
   }
 
-  return children;
+  // ❌ if not admin, redirect them elsewhere (maybe home or unauthorized page)
+  return <Navigate to="/" replace />;
 };
 
 export default AdminRoute;

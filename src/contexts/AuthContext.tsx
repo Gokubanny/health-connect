@@ -36,33 +36,67 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   useEffect(() => {
     const getProfile = async (userId: string) => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", userId)
-        .single();
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("user_id", userId)
+          .single();
 
-      if (!error && data) {
-        setRole(data.role);
-      } else {
-        setRole("user"); // fallback if no role found
+        if (!error && data) {
+          setRole(data.role);
+        } else {
+          // Fallback: check email for admin
+          const { data: userData } = await supabase.auth.getUser();
+          if (userData.user?.email === "marvellousbenji721@gmail.com") {
+            setRole("admin");
+          } else {
+            setRole("user");
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+        setRole("user"); // fallback
       }
+    };
+
+    const clearUserData = () => {
+      setUser(null);
+      setSession(null);
+      setRole(null);
     };
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("Auth state changed:", event, session?.user?.email);
+      
+      if (event === 'SIGNED_OUT' || !session) {
+        clearUserData();
+        setLoading(false);
+        return;
+      }
+
       setSession(session);
       setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        await getProfile(session.user.id);
+      }
+      
       setLoading(false);
-      if (session?.user) getProfile(session.user.id);
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    // Get initial session
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session) {
+        setSession(session);
+        setUser(session?.user ?? null);
+        await getProfile(session.user.id);
+      } else {
+        clearUserData();
+      }
       setLoading(false);
-      if (session?.user) getProfile(session.user.id);
     });
 
     return () => subscription.unsubscribe();
@@ -86,14 +120,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     if (error) return { error };
 
     if (data?.user) {
-      // 👇 Define your email as the owner/admin
-      const isOwner = email === "marvellousbenji721@gmail.com";
+      // Check if this is the admin email
+      const isAdmin = email === "marvellousbenji721@gmail.com";
 
       // Insert into profiles with role
       await supabase.from("profiles").upsert({
-        id: data.user.id,
+        user_id: data.user.id,
         full_name: fullName,
-        role: isOwner ? "admin" : "user",
+        role: isAdmin ? "admin" : "user",
       });
     }
 
@@ -109,9 +143,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    return { error };
+    console.log("Starting sign out process...");
+  
+    try {
+      // Clear local state immediately so UI updates instantly
+      setUser(null);
+      setSession(null);
+      setRole(null);
+  
+      // Start Supabase sign out (don't block UI on it)
+      const { error } = await supabase.auth.signOut();
+  
+      if (error) {
+        console.error("Sign out error:", error);
+        return { error };
+      }
+  
+      console.log("Sign out successful");
+      return { error: null };
+    } catch (err: any) {
+      console.error("Unexpected sign out error:", err);
+      return { error: err };
+    }
   };
+  
 
   const value = { user, session, loading, role, signUp, signIn, signOut };
 
