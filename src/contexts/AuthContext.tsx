@@ -34,32 +34,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [loading, setLoading] = useState(true);
   const [role, setRole] = useState<string | null>(null);
 
-  useEffect(() => {
-    const getProfile = async (userId: string) => {
-      try {
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("role")
-          .eq("user_id", userId)
-          .single();
+  const getProfile = async (userId: string) => {
+    try {
+      console.log("Fetching profile for user:", userId);
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("user_id", userId)
+        .single();
 
-        if (!error && data) {
-          setRole(data.role);
+      if (!error && data) {
+        console.log("User role from profile:", data.role);
+        setRole(data.role);
+      } else {
+        console.log("Profile not found or error:", error);
+        // Fallback: check email for admin
+        const userEmail = user?.email;
+        console.log("Checking user email for admin:", userEmail);
+        if (userEmail === "marvellousbenji721@gmail.com") {
+          setRole("admin");
+          console.log("Admin role set from email");
         } else {
-          // Fallback: check email for admin
-          const { data: userData } = await supabase.auth.getUser();
-          if (userData.user?.email === "marvellousbenji721@gmail.com") {
-            setRole("admin");
-          } else {
-            setRole("user");
-          }
+          setRole("user");
+          console.log("Default user role set");
         }
-      } catch (error) {
-        console.error("Error fetching profile:", error);
-        setRole("user"); // fallback
       }
-    };
+    } catch (error) {
+      console.error("Error fetching profile:", error);
+      setRole("user");
+    }
+  };
 
+  useEffect(() => {
     const clearUserData = () => {
       setUser(null);
       setSession(null);
@@ -108,6 +114,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     fullName?: string
   ) => {
     const redirectUrl = `${window.location.origin}/`;
+    console.log("Signing up user:", email);
+    
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -117,28 +125,59 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       },
     });
 
-    if (error) return { error };
+    if (error) {
+      console.error("Sign up error:", error);
+      return { error };
+    }
 
     if (data?.user) {
+      console.log("User created, setting up profile...");
       // Check if this is the admin email
       const isAdmin = email === "marvellousbenji721@gmail.com";
 
       // Insert into profiles with role
-      await supabase.from("profiles").upsert({
+      const { error: profileError } = await supabase.from("profiles").upsert({
         user_id: data.user.id,
         full_name: fullName,
         role: isAdmin ? "admin" : "user",
       });
+
+      if (profileError) {
+        console.error("Error creating profile:", profileError);
+      } else {
+        console.log("Profile created successfully");
+        
+        // AUTO-SIGN IN AFTER SIGN UP
+        console.log("Auto-signing in after sign up...");
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        
+        if (signInError) {
+          console.error("Auto-sign in error:", signInError);
+        } else {
+          console.log("Auto-sign in successful");
+        }
+      }
     }
 
     return { error: null };
   };
 
   const signIn = async (email: string, password: string) => {
+    console.log("Signing in:", email);
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
+    
+    if (error) {
+      console.error("Sign in error:", error);
+    } else {
+      console.log("Sign in successful");
+    }
+    
     return { error };
   };
 
@@ -146,12 +185,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     console.log("Starting sign out process...");
   
     try {
-      // Clear local state immediately so UI updates instantly
+      // Clear local state immediately
       setUser(null);
       setSession(null);
       setRole(null);
   
-      // Start Supabase sign out (don't block UI on it)
       const { error } = await supabase.auth.signOut();
   
       if (error) {
@@ -167,7 +205,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
   
-
   const value = { user, session, loading, role, signUp, signIn, signOut };
 
   return (

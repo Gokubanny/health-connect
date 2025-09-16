@@ -52,7 +52,7 @@ interface Consultation {
 }
 
 const AdminDashboard = () => {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const { toast } = useToast();
   const [consultations, setConsultations] = useState<Consultation[]>([]);
   const [filteredConsultations, setFilteredConsultations] = useState<Consultation[]>([]);
@@ -68,8 +68,10 @@ const AdminDashboard = () => {
     totalRevenue: 0
   });
 
-  // Check if user is admin
-  if (!user || user.email !== "marvellousbenji721@gmail.com") {
+  // Check if user is admin - USE THE CORRECT EMAIL AND ROLE
+  const isAdmin = user?.email === "marvellousbenji721@gmail.com" || role === "admin";
+  
+  if (!isAdmin) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Card className="w-full max-w-md">

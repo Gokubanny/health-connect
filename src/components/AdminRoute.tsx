@@ -2,17 +2,24 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
 const AdminRoute = ({ children }: { children: JSX.Element }) => {
-  const { user, loading } = useAuth();
+  const { user, role, loading } = useAuth();
 
-  if (loading) return <p>Loading...</p>;
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+  
   if (!user) return <Navigate to="/auth" replace />;
 
-  // ✅ Only allow admin users
-  if (user.user_metadata?.role === "admin") {
-    return children; // let admin access the page
+  // ✅ Only allow admin users - check the role from AuthContext
+  if (role === "admin") {
+    return children;
   }
 
-  // ❌ if not admin, redirect them elsewhere (maybe home or unauthorized page)
+  // ❌ If not admin, redirect to home
   return <Navigate to="/" replace />;
 };
 

@@ -1,6 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,8 +22,9 @@ import {
   CreditCard,
   Shield
 } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
 const BookConsultation = () => {
@@ -48,6 +48,12 @@ const BookConsultation = () => {
 
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Add this useEffect for debugging
+  useEffect(() => {
+    console.log("Current form data:", formData);
+    console.log("User:", user);
+  }, [formData, user]);
 
   const consultationTypes = [
     {
@@ -149,57 +155,120 @@ const BookConsultation = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Final validation for payment method
+    if (!formData.paymentMethod) {
+      toast({
+        title: "Payment Method Required",
+        description: "Please select a payment method to continue.",
+        variant: "destructive"
+      });
+      setIsSubmitting(false);
+      return;
+    }
+  
     setIsSubmitting(true);
-
+    console.log("Starting submission process...");
+  
+    // Set a timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      if (isSubmitting) {
+        setIsSubmitting(false);
+        toast({
+          title: "Request Timeout",
+          description: "The request is taking too long. Please try again.",
+          variant: "destructive"
+        });
+        console.error("Submission timeout after 15 seconds");
+      }
+    }, 15000);
+  
     try {
       const selectedConsultationType = consultationTypes.find(type => type.id === formData.consultationType);
-
+      
+      // Clean the price to store as number (remove currency symbols and commas)
+      const cleanPrice = selectedConsultationType?.price.replace(/[^\d]/g, "") || "0";
+      const cleanDuration = selectedConsultationType?.duration.replace(/[^\d]/g, "") || "30";
+  
+      console.log("Form data being submitted:", {
+        ...formData,
+        consultation_fee: parseInt(cleanPrice),
+        consultation_duration: parseInt(cleanDuration)
+      });
+  
+      // Test Supabase connection first
+      console.log("Testing Supabase connection...");
+      const { data: testData, error: testError } = await supabase
+        .from('consultations')
+        .select('count')
+        .limit(1);
+  
+      if (testError) {
+        console.error("Supabase connection test failed:", testError);
+        throw new Error(`Database connection failed: ${testError.message}`);
+      }
+  
+      console.log("Supabase connection test passed, inserting data...");
+  
       const { data, error } = await supabase
-        .from("consultations")
-        .insert([
-          {
-            user_id: user?.id,
-            patient_name: formData.patientName,
-            email: formData.email,
-            phone: formData.phone,
-            date_of_birth: formData.dateOfBirth,
-            consultation_type: formData.consultationType,
-            preferred_date: formData.preferredDate,
-            preferred_time: formData.preferredTime,
-            symptoms: formData.symptoms,
-            medical_history: formData.medicalHistory,
-            emergency_contact: formData.emergencyContact,
-            payment_method: formData.paymentMethod,
-            consultation_fee: selectedConsultationType?.price.replace(/[^\d]/g, ""), // save as number
-            consultation_duration: selectedConsultationType?.duration,
-            status: "pending",
-            booking_reference: crypto.randomUUID(),
-          },
-        ]);
-
+      .from("consultations")
+      .insert([
+        {
+          user_id: user?.id,
+          patient_name: formData.patientName,
+          email: formData.email,
+          phone: formData.phone,
+          date_of_birth: formData.dateOfBirth || null,
+          consultation_type: formData.consultationType,
+          preferred_date: formData.preferredDate,
+          preferred_time: formData.preferredTime,
+          symptoms: formData.symptoms || null,
+          medical_history: formData.medicalHistory || null,
+          emergency_contact: formData.emergencyContact || null,
+          payment_method: formData.paymentMethod,
+          consultation_fee: parseInt(cleanPrice),
+          consultation_duration: parseInt(cleanDuration),
+          status: "pending",
+          booking_reference: `HC-${new Date().getFullYear()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
+        },
+      ])
+      .select();
+  
+      console.log("Supabase response:", { data, error });
+  
       if (error) {
-        console.error("Error saving consultation:", error.message);
-        toast({
-          title: "Booking Failed",
-          description: "There was an error booking your consultation. Please try again.",
-          variant: "destructive",
-        });
-      } else {
+        console.error("Error saving consultation:", error);
+        // Check for specific error types
+        if (error.code === '42501') {
+          throw new Error("Permission denied. Please check your database permissions.");
+        } else if (error.code === '42P01') {
+          throw new Error("Consultations table doesn't exist. Please run the database setup.");
+        } else {
+          throw new Error(error.message || "There was an error booking your consultation.");
+        }
+      }
+  
+      if (data && data.length > 0) {
+        console.log("Consultation successfully created:", data[0]);
         toast({
           title: "Consultation Booked!",
           description: "Your consultation has been successfully scheduled.",
         });
         navigate("/my-consultations");
+      } else {
+        throw new Error("No data returned from database");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Unexpected error:", error);
       toast({
         title: "Booking Failed",
-        description: "An unexpected error occurred. Please try again.",
+        description: error.message || "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
     } finally {
+      clearTimeout(timeoutId);
       setIsSubmitting(false);
+      console.log("Submission process completed");
     }
   };
 
@@ -572,10 +641,10 @@ const BookConsultation = () => {
                     className="bg-gradient-primary text-primary-foreground"
                   >
                     {isSubmitting ? (
-                      <div className="flex items-center gap-2">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                        Booking...
-                      </div>
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Processing...
+                      </>
                     ) : (
                       <>
                         <CheckCircle className="mr-2 h-4 w-4" />
@@ -594,6 +663,3 @@ const BookConsultation = () => {
 };
 
 export default BookConsultation;
-
-
-

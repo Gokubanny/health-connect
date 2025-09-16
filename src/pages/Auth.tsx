@@ -17,19 +17,25 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   
-  const { signUp, signIn, user, role } = useAuth();
+  const { signUp, signIn, user, role, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
-    if (user) {
-      if (role === "admin") {
-        navigate("/admin"); // 👈 admin goes to admin dashboard
-      } else {
-        navigate("/"); // 👈 normal users go home
-      }
+    if (user && !authLoading) {
+      // Give it a small delay to ensure role is fully loaded
+      const timer = setTimeout(() => {
+        console.log("User authenticated, role:", role);
+        if (role === "admin") {
+          navigate("/admin");
+        } else {
+          navigate("/");
+        }
+      }, 500); // Increased delay to ensure role is loaded
+      
+      return () => clearTimeout(timer);
     }
-  }, [user, role, navigate]);
+  }, [user, role, authLoading, navigate]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,14 +45,18 @@ const Auth = () => {
     try {
       let result;
       if (isSignUp) {
+        console.log("Signing up with:", email);
         result = await signUp(email, password, fullName);
         if (!result.error) {
           toast({
             title: "Account created!",
             description: "Please check your email to verify your account.",
           });
+          // After successful signup, switch to signin mode
+          setIsSignUp(false);
         }
       } else {
+        console.log("Signing in with:", email);
         result = await signIn(email, password);
         if (!result.error) {
           toast({
@@ -57,14 +67,33 @@ const Auth = () => {
       }
 
       if (result.error) {
+        console.error("Auth error:", result.error);
         setError(result.error.message);
+        setLoading(false);
       }
+      // Don't set loading to false here - let the useEffect handle navigation
     } catch (err: any) {
+      console.error("Unexpected error:", err);
       setError(err.message || "An unexpected error occurred");
-    } finally {
       setLoading(false);
     }
   };
+
+  // Show loading state while auth is processing
+  if (loading && user) {
+    return (
+      <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-black/20" />
+        <Card className="w-full max-w-md relative z-10 shadow-card border-0 bg-gradient-card">
+          <CardContent className="p-8 text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <h2 className="text-xl font-semibold mb-2">Processing...</h2>
+            <p className="text-muted-foreground">Completing your authentication</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
@@ -113,6 +142,7 @@ const Auth = () => {
                     onChange={(e) => setFullName(e.target.value)}
                     className="pl-10"
                     required={isSignUp}
+                    disabled={loading}
                   />
                 </div>
               </div>
@@ -130,6 +160,7 @@ const Auth = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   className="pl-10"
                   required
+                  disabled={loading}
                 />
               </div>
             </div>
@@ -147,6 +178,7 @@ const Auth = () => {
                   className="pl-10"
                   minLength={6}
                   required
+                  disabled={loading}
                 />
               </div>
             </div>
@@ -162,7 +194,12 @@ const Auth = () => {
               className="w-full bg-gradient-primary text-primary-foreground shadow-soft"
               disabled={loading}
             >
-              {loading ? "Processing..." : (isSignUp ? "Create Account" : "Sign In")}
+              {loading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Processing...
+                </>
+              ) : isSignUp ? "Create Account" : "Sign In"}
             </Button>
           </form>
 
@@ -176,6 +213,7 @@ const Auth = () => {
                   setError("");
                 }}
                 className="ml-1 p-0 h-auto text-primary"
+                disabled={loading}
               >
                 {isSignUp ? "Sign In" : "Sign Up"}
               </Button>

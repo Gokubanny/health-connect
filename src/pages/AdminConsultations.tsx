@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -18,13 +19,15 @@ interface Consultation {
 }
 
 const AdminConsultations = () => {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const { toast } = useToast();
   const [consultations, setConsultations] = useState<Consultation[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Only allow your admin account
-  if (user?.email !== "omatulemarvellous721@gmail.com") {
+  // Only allow admin account - CHECK BOTH EMAIL AND ROLE
+  const isAdmin = user?.email === "marvellousbenji721@gmail.com" || role === "admin";
+  
+  if (!isAdmin) {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <Card className="p-8 text-center">
